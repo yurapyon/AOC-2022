@@ -1,86 +1,69 @@
-\ note: assumes no elf will carry 0 calories
+: 3drop 2drop drop ;
+: sort ( a b -- min max )
+  2dup > if swap then ;
 
 \ === input ===
 
 0 value in-file
 
-: open-input  s" files/01-input" r/o open-file throw to in-file ;
+: open-input  r/o open-file throw to in-file ;
 : reset-input 0 0 in-file reposition-file throw ;
 : close-input in-file close-file throw ;
 
-256 constant max-line
+16 constant max-line
 create line-buffer max-line 1 + chars allot
 
-: read-to-buf ( -- t/f-eof )
-  line-buffer max-line in-file read-line throw
-  swap line-buffer + 0 swap ! ;
+: read-to-buffer ( -- buf-len t/f-eof )
+  line-buffer max-line in-file read-line throw ;
 
-: buf>number  ( -- number ) 0 0 line-buffer max-line >number 2drop drop ;
+: buffer>number ( ct -- number )
+  >r 0 0 line-buffer r> >number 3drop ;
 
 \ === math ===
 
-0 value curr
+0 value acc
 0 value max0
 0 value max1
 0 value max2
 
-: reset-counts 0 to curr 0 to max0 0 to max1 0 to max2 ;
+: reset-acc   0 to acc ;
+: reset-maxes 0 to max0 0 to max1 0 to max2 ;
+: inc-acc     acc + to acc ;
 
-: process ( xt -- )
-  buf>number ?dup if
-    curr + to curr
-    drop
-  else
-    execute
-    0 to curr
-  then
-  ;
+: process ( xt buf-len -- xt )
+  ?dup if buffer>number inc-acc
+  else dup execute reset-acc
+  then ;
 
-: update-max
-  curr max0 max to max0
-  ;
+: update-max2 acc max2 max to max2 ;
 
 : update-maxes
-  curr max0 > if
-    max1 to max2
-    max0 to max1
-    curr to max0
-  else
-    curr max1 > if
-      max1 to max2
-      curr to max1
-    else
-      curr max2 > if
-        curr to max2
-      then
-    then
-  then
-  ;
+  update-max2
+  max1 max2 sort to max1 to max2
+  max0 max1 sort to max0 to max1 ;
 
 : get-sum max0 max1 max2 + + ;
 
 \ === main ===
 
+: process-file ( xt -- )
+  begin read-to-buffer
+  while process repeat
+  drop ;
+
 : part1
-  begin read-to-buf
-  while ['] update-max process repeat
-  max0 . cr
-  ;
+  ['] update-max2 process-file
+  max2 . cr ;
 
 : part2
-  begin read-to-buf
-  while ['] update-maxes process repeat
-  get-sum . cr
-  ;
+  ['] update-maxes process-file
+  get-sum . cr ;
+
+: reset reset-input reset-acc reset-maxes ;
 
 : main
-  cr
-  open-input
-  part1
-  reset-input reset-counts
-  part2
-  close-input
-  bye
-  ;
+  s" files/01-input" open-input
+  part1 reset part2
+  close-input bye ;
 
 main
