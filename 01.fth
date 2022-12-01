@@ -1,54 +1,43 @@
+\ note: assumes no elf will carry 0 calories
+
 \ === input ===
+
+0 value in-file
+
+: open-input  s" files/01-input" r/o open-file throw to in-file ;
+: reset-input 0 0 in-file reposition-file throw ;
+: close-input in-file close-file throw ;
 
 256 constant max-line
 create line-buffer max-line 1 + chars allot
 
-0 value in-file
-
-: open-input
-  s" files/01-input" r/o open-file throw to in-file
-  ;
-
-: reset-input
-  0 in-file reposition-file throw
-  ;
-
-: close-input
-  in-file close-file throw
-  ;
-
-: read-line ( -- t/f-was-number t/f-was-eof )
+: read-to-buf ( -- t/f-eof )
   line-buffer max-line in-file read-line throw
-  over line-buffer + 0 swap !
-  ;
+  swap line-buffer + 0 swap ! ;
 
-: buf>number ( -- number )
-  0 0 line-buffer max-line >number 2drop drop
-  ;
+: buf>number  ( -- number ) 0 0 line-buffer max-line >number 2drop drop ;
 
 \ === math ===
 
 0 value curr
-
 0 value max0
 0 value max1
 0 value max2
 
-: reset-counts
-  0 to curr
-  0 to max0
-  0 to max1
-  0 to max2
-  ;
+: reset-counts 0 to curr 0 to max0 0 to max1 0 to max2 ;
 
-: process-part1 ( t/f-was-number -- )
-  if
-    buf>number
+: process ( xt -- )
+  buf>number ?dup if
     curr + to curr
+    drop
   else
-    curr max0 max to max0
+    execute
     0 to curr
   then
+  ;
+
+: update-max
+  curr max0 max to max0
   ;
 
 : update-maxes
@@ -68,37 +57,19 @@ create line-buffer max-line 1 + chars allot
   then
   ;
 
-: get-sum
-  max0 max1 max2 + +
-  ;
-
-: process-part2 ( t/f-was-number -- )
-  if
-    buf>number
-    curr + to curr
-  else
-    update-maxes
-    0 to curr
-  then
-  ;
+: get-sum max0 max1 max2 + + ;
 
 \ === main ===
 
 : part1
-  begin
-    read-line
-  while
-    process-part1
-  repeat
+  begin read-to-buf
+  while ['] update-max process repeat
   max0 . cr
   ;
 
 : part2
-  begin
-    read-line
-  while
-    process-part2
-  repeat
+  begin read-to-buf
+  while ['] update-maxes process repeat
   get-sum . cr
   ;
 
@@ -106,8 +77,7 @@ create line-buffer max-line 1 + chars allot
   cr
   open-input
   part1
-  reset-input
-  reset-counts
+  reset-input reset-counts
   part2
   close-input
   bye
