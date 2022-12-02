@@ -9,9 +9,13 @@
 16 constant max-line
 create line-buffer max-line 1 + chars allot
 
+0 value elf-pick
+0 value you-pick
+
 : read-to-buffer ( -- t/f-eof )
-  line-buffer max-line in-file read-line throw
-  nip ;
+  line-buffer max-line in-file read-line throw nip
+  line-buffer c@     [char] A - to elf-pick
+  line-buffer 2 + c@ [char] X - to you-pick ;
 
 \ === rps ===
 
@@ -27,37 +31,33 @@ create line-buffer max-line 1 + chars allot
 
 : outcome>score 3 * ;
 
-: elf-pick line-buffer c@     [char] A - ;
-: you-pick line-buffer 2 + c@ [char] X - ;
-
-\ some weird math but it works
 : round-outcome 1 elf-pick - you-pick + 3 mod ;
 : forced-hand   elf-pick 2 + you-pick + 3 mod ;
-
-: round>score
-  you-pick hand>score
-  round-outcome outcome>score
-  + ;
-
-: forced-round>score
-  forced-hand hand>score
-  you-pick outcome>score
-  + ;
-
-\ === main ===
 
 0 value total-score
 
 : +total total-score + to total-score ;
 : reset-total 0 to total-score ;
 
+: round>score
+  you-pick      hand>score
+  round-outcome outcome>score
+  + +total ;
+
+: forced-round>score
+  forced-hand hand>score
+  you-pick    outcome>score
+  + +total ;
+
+\ === main ===
+
 : process-file ( xt -- )
   begin read-to-buffer
-  while dup execute +total repeat
+  while dup execute repeat
   drop
   total-score . cr ;
 
-: part1 ['] round>score process-file ;
+: part1 ['] round>score        process-file ;
 : part2 ['] forced-round>score process-file ;
 : reset reset-input reset-total ;
 
