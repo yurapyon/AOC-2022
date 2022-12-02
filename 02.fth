@@ -39,26 +39,25 @@ create line-buffer max-line 1 + chars allot
 : +total total-score + to total-score ;
 : reset-total 0 to total-score ;
 
-: round>score
-  you-pick      hand>score
+: do-round
+  you-pick hand>score
   round-outcome outcome>score
   + +total ;
 
-: forced-round>score
+: do-forced-round
   forced-hand hand>score
-  you-pick    outcome>score
+  you-pick outcome>score
   + +total ;
 
 \ === main ===
 
 : process-file ( xt -- )
   begin read-to-buffer
-  while dup execute repeat
-  drop
+  while dup execute repeat drop
   total-score . cr ;
 
-: part1 ['] round>score        process-file ;
-: part2 ['] forced-round>score process-file ;
+: part1 ['] do-round        process-file ;
+: part2 ['] do-forced-round process-file ;
 : reset reset-input reset-total ;
 
 : main
