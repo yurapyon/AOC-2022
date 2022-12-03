@@ -31,6 +31,7 @@ create line-buffer max-line 1 + chars allot
 
 : outcome>score 3 * ;
 
+\ some weird math but it works
 : round-outcome 1 elf-pick - you-pick + 3 mod ;
 : forced-hand   elf-pick 2 + you-pick + 3 mod ;
 
