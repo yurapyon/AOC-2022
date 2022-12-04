@@ -1,6 +1,5 @@
 : flip ( a b c - c b a ) -rot swap ;
 : c!or ( val addr -- ) dup c@ rot or swap c! ;
-: span ( addr len -- addr end-addr) over + swap ;
 
 \ === input ===
 
@@ -13,11 +12,11 @@
 64 constant max-line
 
 : create-buffer create max-line chars cell + allot ;
-: buffer-len-addr ( addr ) max-line chars + ;
+: buffer-end ( addr ) max-line chars + ;
 : read-to-buffer ( addr -- t/f-eof )
   dup max-line in-file read-line throw ( addr len t/f-eof )
-  flip buffer-len-addr ! ;
-: buf-len buffer-len-addr @ ;
+  flip buffer-end ! ;
+: buf-len buffer-end @ ;
 : half-len buf-len 2 / ;
 
 create-buffer lb1
@@ -40,17 +39,19 @@ create tbl 256 chars allot
 : clear-table tbl 256 chars 0 fill ;
 : table-idx tbl + ;
 
-: read-collection ( or-with start len -- )
-  span ?do
+: read-to-table ( or-with start len -- )
+  over + swap ?do
     dup i c@ table-idx c!or loop
   drop ;
+: read-buffer-to-table dup buf-len read-to-table ;
 
-: check-collection ( for start len -- char )
-  span ?do
-    i c@ 2dup ( for char for char )
-    table-idx c@ ( for char for found )
-    = if nip unloop exit else drop then
-  loop ( unreachable ) ;
+: check-table ( for -- ch )
+  [char] [ [char] A ?do
+    dup i table-idx c@ = if drop i unloop exit then
+  loop
+  [char] { [char] a ?do
+    dup i table-idx c@ = if drop i unloop exit then
+  loop ;
 
 0 value total
 : +total total + to total ;
@@ -62,9 +63,9 @@ create tbl 256 chars allot
   begin lb1 read-to-buffer
   while
     clear-table
-    %01 lb1 dup half-len read-collection
-    %01 lb1 dup half-len + lb1 half-len check-collection
-    char>priority +total
+    %01 lb1 lb1 half-len                read-to-table
+    %10 lb1 lb1 half-len + lb1 half-len read-to-table
+    %11 check-table char>priority +total
   repeat
   total . cr ;
 
@@ -72,10 +73,10 @@ create tbl 256 chars allot
   begin read-3-to-buffer
   while
     clear-table
-    %01 lb1 dup buf-len read-collection
-    %10 lb2 dup buf-len read-collection
-    %11 lb3 dup buf-len check-collection
-    char>priority +total
+    %001 lb1 read-buffer-to-table
+    %010 lb2 read-buffer-to-table
+    %100 lb3 read-buffer-to-table
+    %111 check-table char>priority +total
   repeat
   total . cr ;
 
