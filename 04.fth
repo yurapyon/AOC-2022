@@ -1,4 +1,7 @@
 : flip ( a b c - c b a ) -rot swap ;
+: >snumber ( addr len -- addr len number )
+  >r >r 0 0 r> r> >number
+  >r >r drop r> r> rot ;
 
 \ === input ===
 
@@ -14,34 +17,31 @@ create line-buffer max-line 1 + chars allot
 : read-to-buffer ( -- buf-len t/f-eof )
   line-buffer max-line in-file read-line throw ;
 
+: skip,- 1- swap 1+ swap ;
+: next-number skip,- >snumber ;
+
 0 value e1-start
 0 value e1-end
 0 value e2-start
 0 value e2-end
 
-: >snumber ( addr len -- addr len number )
-  >r >r 0 0 r> r> >number
-  >r >r drop r> r> rot ;
-
-: skip,- 1- swap 1+ swap ;
+: ranges> e1-start e1-end e2-start e2-end ;
 
 : read-to-ranges ( buf-len -- )
   line-buffer swap >snumber to e1-start
-  skip,- >snumber to e1-end
-  skip,- >snumber to e2-start
-  skip,- >snumber to e2-end
+  next-number to e1-end
+  next-number to e2-start
+  next-number to e2-end
   2drop ;
 
 \ === math ===
 
-: range-within   ( s1 e1 s2 e2 -- 1/0 ) rot <= -rot <= and 1 and ;
+: range-within   ( s1 e1 s2 e2 -- 1/0 ) rot  <= -rot <= and 1 and ;
 : range-overlaps ( s1 e1 s2 e2 -- 1/0 ) flip <= -rot <= and 1 and ;
-: e1-within-e2 e1-start e1-end e2-start e2-end range-within ;
-: e2-within-e1 e2-start e2-end e1-start e1-end range-within ;
-: e1-overlaps-e2 e1-start e1-end e2-start e2-end range-overlaps ;
-: e2-overlaps-e1 e2-start e2-end e1-start e1-end range-overlaps ;
-: reconsider e1-within-e2 e2-within-e1 or ;
-: overlaps e1-overlaps-e2 e2-overlaps-e1 or ;
+: test-ranges ( xt -- 1/0 )
+  >r ranges> r@ execute
+  ranges> 2swap r> execute
+  or ;
 
 \ === main ===
 
@@ -53,12 +53,12 @@ create line-buffer max-line 1 + chars allot
   begin read-to-buffer
   while
     read-to-ranges
-    dup execute +ct
+    dup test-ranges +ct
   repeat drop
   ct . cr ;
 
-: part1 ['] reconsider process-file ;
-: part2 ['] overlaps process-file ;
+: part1 ['] range-within process-file ;
+: part2 ['] range-overlaps process-file ;
 : reset reset-input reset-ct ;
 
 : main
