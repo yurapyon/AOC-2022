@@ -36,9 +36,9 @@ create line-buffer max-line 1 + chars allot
 
 \ === math ===
 
-: range-within   ( s1 e1 s2 e2 -- 1/0 ) rot  <= -rot <= and 1 and ;
-: range-overlaps ( s1 e1 s2 e2 -- 1/0 ) flip <= -rot <= and 1 and ;
-: test-ranges ( xt -- 1/0 )
+: range-within   ( s1 e1 s2 e2 -- t/f ) rot  <= -rot <= and ;
+: range-overlaps ( s1 e1 s2 e2 -- t/f ) flip <= -rot <= and ;
+: test-ranges ( xt -- t/f )
   >r ranges> r@ execute
   ranges> 2swap r> execute
   or ;
@@ -53,7 +53,7 @@ create line-buffer max-line 1 + chars allot
   begin read-to-buffer
   while
     read-to-ranges
-    dup test-ranges +ct
+    dup test-ranges 1 and +ct
   repeat drop
   ct . cr ;
 
